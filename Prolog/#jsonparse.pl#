@@ -26,7 +26,9 @@ prop_to_list(Properties, Parsed) :-
     arg(2, Properties, PropValue), % prendo il secondo argomento
     isValue(PropValue), % controllo che sia un valore
     Parsed = [(PropName, PropValue)]. % restituisco coppia di nome più valore
-
+%%% Passo ricorsivo (approcio divide et impera (?))
+%%% prop_to_list(Properties, Parsed) :-
+    
     
 
 
