@@ -1,8 +1,7 @@
 %%% JSONPARSE
 
-
 %%% Casi base
-jsonparse('[]', jsonarray([])):- !.
+jsonparse([], jsonarray([])):- !.
 jsonparse({}, jsonobj([])) :- !.
 
 %%% Seconda chiamata oggetto
@@ -83,16 +82,9 @@ isValue(true, true).
 isValue(false, false).
 isValue(null, null).
 
-
-
-%% String test: '{"ciao": "value"}'
-%% String test 2: '{"ciao": "value", "ciao2": "value", "ciao3": {"ciao4" : "value"}}'
-%% String test 3: '{"oggetto": [1, 2, 3]}'
-
 %%% JSONACCESS
 %%% TODO
-% Inserire controllo validità input, non deve dare risposta se l'oggetto è sbagliato (is not Value)
-% Inserire cut
+% Controllare cut
 %%% Caso base su oggetto, un solo campo da cercare
 jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
     SearchFields = [Field],
@@ -126,72 +118,4 @@ findField([Result | _], 0, Result).
 findField([_ | OtherFields], N, Result) :-
     number(N),
     N1 is (N - 1),
-    findField(OtherFields, N1, Result).
-
-
-
-%%% JSONREAD
-
-jsonread(FileName, JSON) :-
-    open(FileName, read, Stream),
-    read_string(Stream, _, Stringa),
-    normalize_space(atom(FString), Stringa),
-    jsonparse(FString, JSON).
-
-
-%%% JSONDUMP
-
-jsondump(JSONObj, FileName):-
-    stringify(JSONObj, JSONString),
-    open(FileName, write, Stream,[create([all])]),
-    write(Stream, JSONString),
-    close(Stream).
-
-
-stringify(jsonobj([]), {}) :- !. 
-stringify(jsonarray([]), []) :- !. 
-stringify(jsonobj(Object), JSONString) :-
-    elements_strings(Object, ObjectString),
-    string_concat("{", ObjectString, Concat1),
-    string_concat(Concat1, "}", JSONString),
-    !.
-stringify(jsonarray(Array), JSONString) :-
-    array_elements_strings(Array, ArrayString),
-    string_concat("[", ArrayString, Concat1),
-    string_concat(Concat1, "]", JSONString),
-    !.
-stringify(String, JSONString) :-
-    string(String),
-    string_concat("\"", String, String1),
-    string_concat(String1, "\"", JSONString),
-    !.
-stringify(Number, Number) :-
-    number(Number), !.
-stringify(true, true) :- !.
-stringify(false, false) :- !.
-stringify(null, null) :- ! .
-
-
-elements_strings([(Field, Value)], JSONString) :-
-    stringify(Field, JSONField),
-    stringify(Value, JSONValue),
-    string_concat(JSONField, ": ", Concat1),
-    string_concat(Concat1, JSONValue, JSONString),
-    !.
-elements_strings([Property| OtherFields], JSONString) :-
-    elements_strings([Property], Prop1),
-    elements_strings(OtherFields, Props),
-    string_concat(Prop1, ", ", Concat1),
-    string_concat(Concat1, Props, JSONString),
-    !.
-
-array_elements_strings([Value], JSONString) :-
-    stringify(Value, JSONString),
-    !.
-array_elements_strings([Value | Values], JSONString) :-
-    stringify(Value, ValueString),
-    array_elements_strings(Values, ValuesString),
-    string_concat(ValueString, ", ", Concat1),
-    string_concat(Concat1, ValuesString, JSONString),
-    !.
-    
+    findField(OtherFields, N1, 

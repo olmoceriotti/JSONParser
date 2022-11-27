@@ -1,5 +1,1 @@
-{ "macchina":{
-	"ruote": {"davanti": 2, "dietro": 2},
-	"motore": 1
-	}}
-		 
+{"nome": [1, 2, 3, {"nome": "vittoria"}], "cognome": [1]}
