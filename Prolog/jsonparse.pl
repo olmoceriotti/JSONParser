@@ -1,8 +1,11 @@
+%%% JSONPARSE
+
+
 %%% Casi base
 jsonparse([], jsonarray([])):- !.
 jsonparse({}, jsonobj([])) :- !.
 
-%%% Seconda chiamata
+%%% Seconda chiamata oggetto
 jsonparse(String, jsonobj(Parsed)) :-
     string(String), % Riconosco stringa per evitare conflitti
     term_string(Term, String), % converto stringa in termine
@@ -10,7 +13,13 @@ jsonparse(String, jsonobj(Parsed)) :-
     Term =.. [_, Properties], % rimuovo funtore '{}' dell'oggetto JSON e ottengo il resto degli argomenti (1)
     prop_to_list(Properties, Parsed), % converto le proprietà in una lista di termini di arietà 2
     !. % inserisco il cut perchè backtracking stupido
-
+%%% Seconda chiamata array
+jsonparse(ArrayString, Parsed) :-
+    string(ArrayString),
+    term_string(Term, ArrayString),
+    isArray(Term),
+    isValue(Term, Parsed),
+    !.
 %%% Prima chiamata
 jsonparse(Atom, Parsed) :-
     atom(Atom), % Oggeto sempre passato come atomo
@@ -35,12 +44,25 @@ prop_to_list(Properties, Parsed) :-
     prop_to_list(Prop2, Parse2), % eseguo chiamata ricorsiva che non si ferma finchè non c'è una sola proprietà e ottengo lista di proprietà   
     append(Parse1, Parse2, Parsed). % attacco la prima proprietà con il resto delle proprietà
 
+%%% Da elementi array a lista
+%%% Caso Base, un solo elemento nell'array
+element_to_list(Element, Parsed) :-
+    Element =.. ['[|]', Value, []],
+    isValue(Value, ParsedValue),
+    Parsed = [ParsedValue].
+element_to_list(Elements, Parsed) :-
+    Elements =.. ['[|]', Value, Values],
+    element_to_list(Values, ParsedValues),
+    isValue(Value, ParsedValue),
+    append([ParsedValue], ParsedValues, Parsed).
 
-
-%% Object recognition
+%% Riconoscimento oggetti e array
 isObject(Object) :-
     Object =.. [{}| _]. % Se il funtore è {} allora è un oggetto
-%% Value recognition
+isArray(Array) :-
+    Array =.. ['[|]' | _].
+
+%% Riconoscimento valori
 isValue(String, String) :-
     string(String),
     !.
@@ -50,8 +72,13 @@ isValue(Number, Number) :-
 isValue(Object, ParsedObject) :-
     isObject(Object), % è un oggetto
     term_string(Object, String), % converto oggetto in stringa perchè è un compund e quindi non verrebbe accettato come atomo
-    jsonparse(String, ParsedObject). % Passo ricorsivo, effettuo parse e ritorno oggetto parsato
-isValue([], []).
+    jsonparse(String, ParsedObject), % Passo ricorsivo, effettuo parse e ritorno oggetto parsato
+    !.
+isValue(Array, jsonarray(ParsedArray)) :-
+    isArray(Array), % controllo array
+    element_to_list(Array, ParsedArray), % converto array in lista di elementi parsati
+    !.
+isValue([], jsonarray([])).
 isValue(true, true).
 isValue(false, false).
 isValue(null, null).
@@ -60,3 +87,54 @@ isValue(null, null).
 
 %% String test: '{"ciao": "value"}'
 %% String test 2: '{"ciao": "value", "ciao2": "value", "ciao3": {"ciao4" : "value"}}'
+%% String test 3: '{"oggetto": [1, 2, 3]}'
+
+%%% JSONACCESS
+%%% TODO
+% Inserire controllo validità input, non deve dare risposta se l'oggetto è sbagliato (is not Value)
+% Inserire cut
+%%% Caso base su oggetto, un solo campo da cercare
+jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
+    SearchFields = [Field],
+    findField(ObjectFields, Field, Result). % Cerco singolo campo
+%%% Caso passo, più campi
+jsonaccess(jsonobj(ObjectFields), [Field | OtherFields], Result) :-
+    findField(ObjectFields, Field, Result1), % Cerco primo capo
+    jsonaccess(Result1, OtherFields, Result). % Effettuo ricerca sul risultato del campo
+%%%  Caso gestion stringa
+jsonaccess(jsonobj(ObjectFields), StringField, Result) :-
+    string(StringField),
+    findField(ObjectFields, StringField, Result).
+jsonaccess(jsonarray(Array), [Index], Result) :-
+    number(Index),
+    findField(Array, Index, Result).
+jsonaccess(jsonarray(Array), [Index | OtherFields], Result) :-
+    number(Index),
+    findField(Array, Index, Result1),
+    jsonaccess(Result1, OtherFields, Result).
+%%% Ricerca campi
+%%% Caso base
+findField([(Field, Value) | _], Field, Value) :-
+    string(Field),
+    !.
+%%% Caso passo
+findField([_ | OtherFields], Field, Value) :-
+    string(Field),
+    findField(OtherFields, Field, Value),
+    !.
+findField([Result | _], 0, Result).
+findField([_ | OtherFields], N, Result) :-
+    number(N),
+    N1 is (N - 1),
+    findField(OtherFields, N1, Result).
+
+
+
+%%% JSONREAD
+%%%open('fle1.txt', read, S), read_string(S, _, Stringa), normalize_space(atom(X), Stringa).
+
+jsonread(FileName, JSON) :-
+    open(FileName, read, Stream),
+    read_string(Stream, _, Stringa),
+    normalize_space(atom(FString), Stringa),
+    jsonparse(FString, JSON).
