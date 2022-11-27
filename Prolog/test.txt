@@ -1,4 +1,0 @@
-  String test: '{"ciao": "value"}'
-  
-  String test 2: '{"ciao": "value", "ciao2": "value", "ciao3": {"ciao4" : "value"}}
-														       String test 3: '{"oggetto": [1, 2, 3]}' 
