@@ -47,24 +47,24 @@ prop_to_list(Properties, Parsed) :-
 %%% Da elementi array a lista
 %%% Caso Base, un solo elemento nell'array
 element_to_list(Element, Parsed) :-
-    Element =.. ['[|]', Value, []],
-    isValue(Value, ParsedValue),
-    Parsed = [ParsedValue].
+    Element =.. ['[|]', Value, []], % L'argomento è un array e contiene un singolo elemento
+    isValue(Value, ParsedValue), % Faccio controllo e parsing dell'unico valore
+    Parsed = [ParsedValue]. % Restituisco una lista di un singolo elemento
 element_to_list(Elements, Parsed) :-
-    Elements =.. ['[|]', Value, Values],
-    element_to_list(Values, ParsedValues),
-    isValue(Value, ParsedValue),
-    append([ParsedValue], ParsedValues, Parsed).
+    Elements =.. ['[|]', Value, Values], % Divido il primo elemento da gli altri
+    element_to_list(Values, ParsedValues), % passo  ricorsivo converto il resto della lista
+    isValue(Value, ParsedValue), % Controllo e parso il primo elemento
+    append([ParsedValue], ParsedValues, Parsed). % Unisco al primo  con il resto della lista
 
 %% Riconoscimento oggetti e array
 isObject(Object) :-
     Object =.. [{}| _]. % Se il funtore è {} allora è un oggetto
 isArray(Array) :-
-    Array =.. ['[|]' | _].
+    Array =.. ['[|]' | _]. % Se il funtore è [] allora  è un array
 
 %% Riconoscimento valori
 isValue(String, String) :-
-    string(String),
+    string(String), 
     !.
 isValue(Number, Number) :-
     number(Number),
@@ -95,7 +95,7 @@ isValue(null, null).
 % Inserire cut
 %%% Caso base su oggetto, un solo campo da cercare
 jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
-    SearchFields = [Field],
+    SearchFields = [Field], %Se search fields è un singolo campo
     findField(ObjectFields, Field, Result). % Cerco singolo campo
 %%% Caso passo, più campi
 jsonaccess(jsonobj(ObjectFields), [Field | OtherFields], Result) :-
@@ -103,66 +103,68 @@ jsonaccess(jsonobj(ObjectFields), [Field | OtherFields], Result) :-
     jsonaccess(Result1, OtherFields, Result). % Effettuo ricerca sul risultato del campo
 %%%  Caso gestion stringa
 jsonaccess(jsonobj(ObjectFields), StringField, Result) :-
-    string(StringField),
-    findField(ObjectFields, StringField, Result).
+    string(StringField), % Se è una stringa
+    findField(ObjectFields, StringField, Result). % Effettuo direttamente ricerca senza operazioni su liste
 jsonaccess(jsonarray(Array), [Index], Result) :-
     number(Index),
-    findField(Array, Index, Result).
+    findField(Array, Index, Result). % Faccio ricerca per indice invece che per campo
 jsonaccess(jsonarray(Array), [Index | OtherFields], Result) :-
     number(Index),
-    findField(Array, Index, Result1),
-    jsonaccess(Result1, OtherFields, Result).
+    findField(Array, Index, Result1), % Effettuo ricerca per il primo indice
+    jsonaccess(Result1, OtherFields, Result). % Richiamo il metodo sul risultato
 %%% Ricerca campi
 %%% Caso base
 findField([(Field, Value) | _], Field, Value) :-
-    string(Field),
+    string(Field), %Se il campo è uguale a quello cercato restituisco il valore
     !.
 %%% Caso passo
 findField([_ | OtherFields], Field, Value) :-
     string(Field),
-    findField(OtherFields, Field, Value),
+    findField(OtherFields, Field, Value), % Richiamo funzione perchè non ho trovato campo
     !.
-findField([Result | _], 0, Result).
+findField([Result | _], 0, Result). % Se è 0 ho trovato l'elemento
 findField([_ | OtherFields], N, Result) :-
+    N > 0,
     number(N),
     N1 is (N - 1),
-    findField(OtherFields, N1, Result).
+    findField(OtherFields, N1, Result). % Richiamo fino a che non arrivo a 0
 
 
 
 %%% JSONREAD
 
-jsonread(FileName, JSON) :-
-    open(FileName, read, Stream),
-    read_string(Stream, _, Stringa),
-    normalize_space(atom(FString), Stringa),
-    jsonparse(FString, JSON).
+jsonread(FileName, JSON) :- 
+    open(FileName, read, Stream), % Apro stream
+    read_string(Stream, _, Stringa), % Salvo tutto il file in una stringa
+    normalize_space(atom(FString), Stringa), % Sostiuisco tutti i whitespace
+    jsonparse(FString, JSON), % Faccio il parsing e restituisco
+    close(Stream). % Chiudo la stream
 
 
 %%% JSONDUMP
 
 jsondump(JSONObj, FileName):-
-    stringify(JSONObj, JSONString),
-    open(FileName, write, Stream,[create([all])]),
-    write(Stream, JSONString),
-    close(Stream).
+    stringify(JSONObj, JSONString), % Faccio diventare l'oggetto una stringa
+    open(FileName, write, Stream,[create([all])]), % Apro stream e se il file non c'è lo creo
+    write(Stream, JSONString), % Scrivo nella stram
+    close(Stream). % Chiudo la stream
 
 
 stringify(jsonobj([]), {}) :- !. 
 stringify(jsonarray([]), []) :- !. 
 stringify(jsonobj(Object), JSONString) :-
-    elements_strings(Object, ObjectString),
-    string_concat("{", ObjectString, Concat1),
+    elements_strings(Object, ObjectString), % Converto oggetto in stringa
+    string_concat("{", ObjectString, Concat1), % Aggiungo le parentesi
     string_concat(Concat1, "}", JSONString),
     !.
 stringify(jsonarray(Array), JSONString) :-
-    array_elements_strings(Array, ArrayString),
-    string_concat("[", ArrayString, Concat1),
+    array_elements_strings(Array, ArrayString), % Converto array in stringa
+    string_concat("[", ArrayString, Concat1), % Aggiungo le parentesi 
     string_concat(Concat1, "]", JSONString),
     !.
 stringify(String, JSONString) :-
-    string(String),
-    string_concat("\"", String, String1),
+    string(String), % Controllo che sia una stringa
+    string_concat("\"", String, String1), % Aggiungo le virgolette
     string_concat(String1, "\"", JSONString),
     !.
 stringify(Number, Number) :-
@@ -173,25 +175,25 @@ stringify(null, null) :- ! .
 
 
 elements_strings([(Field, Value)], JSONString) :-
-    stringify(Field, JSONField),
-    stringify(Value, JSONValue),
-    string_concat(JSONField, ": ", Concat1),
+    stringify(Field, JSONField), % Campo diventa stringa
+    stringify(Value, JSONValue), % Valore diventa stringa
+    string_concat(JSONField, ": ", Concat1), % Aggiungo punto e virgola
     string_concat(Concat1, JSONValue, JSONString),
     !.
 elements_strings([Property| OtherFields], JSONString) :-
-    elements_strings([Property], Prop1),
-    elements_strings(OtherFields, Props),
-    string_concat(Prop1, ", ", Concat1),
+    elements_strings([Property], Prop1), % Converto la prima proprietà in stringa
+    elements_strings(OtherFields, Props), % Converto le altre proprietà in stringhe e le concateno
+    string_concat(Prop1, ", ", Concat1), % Concateno la prima prop e il resto delle prop
     string_concat(Concat1, Props, JSONString),
     !.
 
 array_elements_strings([Value], JSONString) :-
-    stringify(Value, JSONString),
+    stringify(Value, JSONString), % Restituisco il singolo valore
     !.
 array_elements_strings([Value | Values], JSONString) :-
-    stringify(Value, ValueString),
-    array_elements_strings(Values, ValuesString),
-    string_concat(ValueString, ", ", Concat1),
+    stringify(Value, ValueString), % Converto in stringa il primo valore
+    array_elements_strings(Values, ValuesString), % Converto e concateno gli altri valori
+    string_concat(ValueString, ", ", Concat1), % Concateno i valori
     string_concat(Concat1, ValuesString, JSONString),
     !.
     
