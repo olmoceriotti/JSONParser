@@ -95,7 +95,7 @@ isValue(null, null).
 % Inserire cut
 %%% Caso base su oggetto, un solo campo da cercare
 jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
-    SearchFields = [Field], %Se search fields è un singolo campo
+    SearchFields = [Field], %Se search fields è un singolo campo //CORREGGERE
     findField(ObjectFields, Field, Result). % Cerco singolo campo
 %%% Caso passo, più campi
 jsonaccess(jsonobj(ObjectFields), [Field | OtherFields], Result) :-
@@ -121,7 +121,7 @@ findField([(Field, Value) | _], Field, Value) :-
 findField([_ | OtherFields], Field, Value) :-
     string(Field),
     findField(OtherFields, Field, Value), % Richiamo funzione perchè non ho trovato campo
-    !.
+    !. %CORREGGERE CONTROLLO ERRORE
 findField([Result | _], 0, Result). % Se è 0 ho trovato l'elemento
 findField([_ | OtherFields], N, Result) :-
     N > 0,
