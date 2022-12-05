@@ -9,3 +9,12 @@
 - Ottimizzazione
 - Versione no comment
 
+## TODO PER SARA
+
+- Yarn
+- Git
+- Clonare git
+- Tmux
+- Emacs per cmd
+- Prolog Mode emacs
+
