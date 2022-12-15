@@ -8,7 +8,7 @@
 2.2) Float [\]
 2.3) Esponenziali []
 3) tokenizzare boolean [\]
-4) Stringhe che contengono apici []
+4) Stringhe che contengono apici [-]
 |#
 
 (defun jsonparse (JSONString)
@@ -236,8 +236,3 @@
 	((or (eql (car JSONValue) 'jsonobj)
 	     (eql (car JSONValue) 'jsonarray))
 	 (jsonconvert JSONValue))))
-
-(defun test (list &key key)
-  (if (null list)
-      key
-      (test (cdr list) key)))
