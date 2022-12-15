@@ -5,9 +5,10 @@
 1) rimuovere whitespace [\]
 2) tokenizzare numeri []
 2.1) Interi [\]
-2.2) Float []
+2.2) Float [\]
 2.3) Esponenziali []
-3) tokenizzare boolean [\] 
+3) tokenizzare boolean [\]
+4) Stringhe che contengono apici []
 |#
 
 (defun jsonparse (JSONString)
@@ -49,16 +50,21 @@
 (defun normalizeNumbers (charlist acc)
   (cond ((and (null charlist) (null acc)) NIL)
 	((null charlist)
-	 (list (parse-integer (compact acc))))
+	 (list (parseNumber (compact acc))))
 	((and (not (stringp (car charlist))) (not (null (digit-char-p (car charlist)))))
 	 (normalizeNumbers (rest charlist) (append  acc (list (car charlist)))))
-	((eql (car charlist) #\-)
+	((or (eql (car charlist) #\-)
+	     (eql (car charlist) #\.))
 	 (normalizeNumbers (rest charlist) (append acc (list (car charlist)))))
 	((not (null acc))
-	 (append (list (parse-integer (compact acc))) (normalizeNumbers charlist NIL)))
+	 (append (list (parseNumber (compact acc))) (normalizeNumbers charlist NIL)))
 	(T
 	 (append (list (car charlist)) (normalizeNumbers (rest charlist) acc)))))
 
+(defun parseNumber (numString)
+  (if (not (null (find #\. numString)))
+      (parse-float numString)
+      (parse-integer numString)))
 
 (defun jsonroute (tokens)
   (cond ((and (eql (car tokens) #\{) (eql (car (last tokens)) #\}))
@@ -180,3 +186,58 @@
 
 
 #| JSONRead |#
+(defun jsonread (filename)
+  (with-open-file (stream filename
+		  :direction :input
+		  :if-does-not-exist :error)
+    (let ((contents (make-string (file-length stream))))
+      (read-sequence contents stream)
+      (jsonparse contents))))
+
+#| JSONDump |#
+
+(defun jsondump (JSON filename)
+  (with-open-file (stream filename
+			  :direction :output
+			  :if-exists :supersede
+			  :if-does-not-exist :create)
+    (format stream "~A" (jsonconvert JSON)))
+  filename)
+
+(defun jsonconvert (JSON)
+  (cond ((eql (car JSON) 'jsonobj)
+	 (concatenate 'string "{" (reduceObj 'pairConvert (rest JSON)  "" "") "}"))
+	((eql (car JSON) 'jsonarray)
+	 (concatenate 'string "[" (reduceObj 'valueConvert (rest JSON)  "" "") "]"))
+	(T
+	 (error "Not a valid argument"))))
+
+(defun reduceObj (function list initial-value tok)
+  (cond ((null list) initial-value)
+	(T
+	 (reduceObj function (rest list)
+		    (concatenate 'string initial-value  tok  (funcall function (car list)))
+		    ", "))))
+
+(defun pairConvert (JSON)
+  (concatenate 'string
+	       (valueConvert (first JSON))
+	       ": "
+	       (valueConvert (second JSON))))
+
+(defun valueConvert (JSONValue)
+  (cond ((null JSONValue) NIL)
+	((stringp JSONValue) (concatenate 'string "\"" JSONValue "\""))
+	((numberp JSONValue) (write-to-string JSONValue))
+	((or (eql JSONValue 'true)
+	    (eql JSONValue 'false)
+	    (eql JSONValue 'null))
+	 (write-to-string JSONValue))
+	((or (eql (car JSONValue) 'jsonobj)
+	     (eql (car JSONValue) 'jsonarray))
+	 (jsonconvert JSONValue))))
+
+(defun test (list &key key)
+  (if (null list)
+      key
+      (test (cdr list) key)))
