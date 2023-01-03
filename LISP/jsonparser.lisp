@@ -3,10 +3,10 @@
 #|
    TODO
 1) rimuovere whitespace [\]
-2) tokenizzare numeri []
+2) tokenizzare numeri [\]
 2.1) Interi [\]
 2.2) Float [\]
-2.3) Esponenziali []
+2.3) Esponenziali [\]
 3) tokenizzare boolean [\]
 4) Stringhe che contengono apici [-]
 |#
@@ -54,7 +54,9 @@
 	((and (not (stringp (car charlist))) (not (null (digit-char-p (car charlist)))))
 	 (normalizeNumbers (rest charlist) (append  acc (list (car charlist)))))
 	((or (eql (car charlist) #\-)
-	     (eql (car charlist) #\.))
+	     (eql (car charlist) #\.)
+	     (eql (car charlist) #\e)
+	     (eql (car charlist) #\E))
 	 (normalizeNumbers (rest charlist) (append acc (list (car charlist)))))
 	((not (null acc))
 	 (append (list (parseNumber (compact acc))) (normalizeNumbers charlist NIL)))
@@ -62,7 +64,7 @@
 	 (append (list (car charlist)) (normalizeNumbers (rest charlist) acc)))))
 
 (defun parseNumber (numString)
-  (if (not (null (find #\. numString)))
+  (if (or (not (null (find #\. numString))) (or (not (null (find #\e numString))) (not (null (find #\E numstring)))))
       (parse-float numString)
       (parse-integer numString)))
 

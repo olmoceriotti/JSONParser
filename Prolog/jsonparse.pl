@@ -1,4 +1,4 @@
-%%% JSONPARSE
+%%% AJSONPARSE
 
 
 %%% Casi base
@@ -45,7 +45,7 @@ prop_to_list(Properties, Parsed) :-
     Parsed = [(PropName, ParsedValue)].
 %%% Passo ricorsivo (approcio divide et impera)
 prop_to_list(Properties, Parsed) :-
-    functor(Properties, ',', 2),
+    functor(Properties, ',' , 2),
     arg(1, Properties, Prop1),
     prop_to_list(Prop1, Parse1),
     arg(2, Properties, Prop2),
@@ -66,7 +66,7 @@ element_to_list(Elements, Parsed) :-
 
 %% Riconoscimento oggetti e array
 isObject(Object) :-
-    Object =.. [{} | _].
+    Object =.. [{}| _].
 isArray(Array) :-
     Array =.. ['[|]' | _].
 
@@ -94,7 +94,7 @@ isValue(null, null).
 
 %%% JSONACCESS
 jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
-    SearchFields = [Field],
+    SearchFields = [Field], %CORREGGERE
     findField(ObjectFields, Field, Result),
     !.
 %%% Caso passo, più campi
@@ -172,8 +172,7 @@ stringify(String, JSONString) :-
     string_concat(String1, "\"", JSONString),
     !.
 stringify(Number, Number) :-
-    number(Number),
-    !.
+    number(Number), !.
 stringify(true, true) :- !.
 stringify(false, false) :- !.
 stringify(null, null) :- ! .
@@ -204,4 +203,4 @@ array_elements_strings([Value | Values], JSONString) :-
 
 
 %%% Query per visualizzare sempre l'output complet
-:- set_prolog_flag(answer_write_options, [max_depth(0)]).
+:- set_prolog_flag(answer_write_options,[max_depth(0)]).
