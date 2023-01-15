@@ -1,0 +1,20 @@
+{
+    "Stringhe": {
+	"stringa": "stringa",
+	"stringhe": "stringa1 stringa2",
+	"vuota": "",
+	"caratteri speciali": "\n \d \t \u7879",
+    },
+    "Numeri": {
+	"interi": 1,
+	"float": 1.2,
+	"esp": 1.2e3
+    }, 
+    "Boolean": [
+	true,
+	false,
+	null
+    ]
+}
+	
+	

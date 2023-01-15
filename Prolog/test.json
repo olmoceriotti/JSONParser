@@ -1,1 +1,14 @@
-{}
+{
+    "numeri" : {
+	"intero": 1,
+	"float": 2.1,
+	"esponenziale": 1.2e+3
+    },
+    "stringa" : {
+	"piena": "123",
+	"vuota": "",
+	"escape": "\n ciao",
+	"virgolette": "\\\" ciao"
+    },
+    "booleani" : [true, false, null]
+}
