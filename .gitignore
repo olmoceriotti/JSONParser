@@ -6,4 +6,5 @@
 #*
 #*#
 .gitignore~
+jsonparse\ con\ commento.pl
 *test*

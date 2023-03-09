@@ -1,10 +1,3 @@
-# JSONParser
+# JSONPARSER
 
-### Progetto LP 2022
-
-
-## TODO
-
-- Test
-- Ottimizzazione
-
+JSON parsing library built in Prolog and in Lisp for the course "Linguaggi di Programmazione" of the Bachelor Degree in Computer Science at UniMiB. 

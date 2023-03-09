@@ -1,41 +1,35 @@
-%%% AJSONPARSE
+%%% Partecipanti
+%% Olmo Ceriotti 886140
 
+%%% JSONPARSE
 
-%%% Casi base
-jsonparse('[]', jsonarray([])):- !.
+jsonparse('[]', jsonarray([])) :- !.
 jsonparse({}, jsonobj([])) :- !.
 
-%%% Seconda chiamata oggetto
 jsonparse(String, jsonobj(Parsed)) :-
     string(String),
     normalize_space(string(Normalized_String), String),
-    term_string(Term, Normalized_String),
+    catch(term_string(Term, Normalized_String), _, false),
     isObject(Term),
     Term =.. [_, Properties],
-    prop_to_list(Properties, Parsed), 
+    catch(prop_to_list(Properties, Parsed), _, false),
     !.
-%%% Seconda chiamata array
 jsonparse(ArrayString, Parsed) :-
     string(ArrayString),
     normalize_space(string(Normalized_String), ArrayString),
-    term_string(Term, Normalized_String),
+    catch(term_string(Term, Normalized_String), _, false),
     isArray(Term),
-    isValue(Term, Parsed),
+    catch(isValue(Term, Parsed), _, false),
     !.
-%%% Prima chiamata
 jsonparse(Atom, Parsed) :-
     atom(Atom),
     !,
     atom_string(Atom, String),
-    jsonparse(String, Parsed).
-
+    catch(jsonparse(String, Parsed), _, false).
 jsonparse(X, Parsed) :-
     var(X),
     stringify(Parsed, X).
-    
 
-%%% Da compound proprietà a lista
-%%% Caso base (una singola proprietà)
 prop_to_list(Properties, Parsed) :-
     functor(Properties, :, 2),
     arg(1, Properties, PropName),
@@ -43,17 +37,14 @@ prop_to_list(Properties, Parsed) :-
     arg(2, Properties, PropValue),
     isValue(PropValue, ParsedValue),
     Parsed = [(PropName, ParsedValue)].
-%%% Passo ricorsivo (approcio divide et impera)
 prop_to_list(Properties, Parsed) :-
-    functor(Properties, ',' , 2),
+    functor(Properties, ',', 2),
     arg(1, Properties, Prop1),
     prop_to_list(Prop1, Parse1),
     arg(2, Properties, Prop2),
     prop_to_list(Prop2, Parse2),
     append(Parse1, Parse2, Parsed).
 
-%%% Da elementi array a lista
-%%% Caso Base, un solo elemento nell'array
 element_to_list(Element, Parsed) :-
     Element =.. ['[|]', Value, []],
     isValue(Value, ParsedValue),
@@ -64,15 +55,15 @@ element_to_list(Elements, Parsed) :-
     isValue(Value, ParsedValue),
     append([ParsedValue], ParsedValues, Parsed).
 
-%% Riconoscimento oggetti e array
 isObject(Object) :-
-    Object =.. [{}| _].
+    Object =.. [{} | _].
 isArray(Array) :-
     Array =.. ['[|]' | _].
 
-%% Riconoscimento valori
-isValue(String, String) :-
-    string(String), 
+isValue(String, ParsedString) :-
+    string(String),
+    string_concat("\"", String, Par1),
+    string_concat(Par1, "\"", ParsedString),
     !.
 isValue(Number, Number) :-
     number(Number),
@@ -94,15 +85,13 @@ isValue(null, null).
 
 %%% JSONACCESS
 jsonaccess(jsonobj(ObjectFields), SearchFields, Result) :-
-    SearchFields = [Field], %CORREGGERE
+    SearchFields = [Field],
     findField(ObjectFields, Field, Result),
     !.
-%%% Caso passo, più campi
 jsonaccess(jsonobj(ObjectFields), [Field | OtherFields], Result) :-
     findField(ObjectFields, Field, Result1),
     jsonaccess(Result1, OtherFields, Result),
     !.
-%%%  Caso gestion stringa
 jsonaccess(jsonobj(ObjectFields), StringField, Result) :-
     string(StringField),
     findField(ObjectFields, StringField, Result),
@@ -116,12 +105,10 @@ jsonaccess(jsonarray(Array), [Index | OtherFields], Result) :-
     findField(Array, Index, Result1),
     jsonaccess(Result1, OtherFields, Result),
     !.
-%%% Ricerca campi
-%%% Caso base
+
 findField([(Field, Value) | _], Field, Value) :-
     string(Field),
     !.
-%%% Caso passo
 findField([_ | OtherFields], Field, Value) :-
     string(Field),
     findField(OtherFields, Field, Value),
@@ -134,25 +121,21 @@ findField([_ | OtherFields], N, Result) :-
     findField(OtherFields, N1, Result),
     !.
 
-
-
 %%% JSONREAD
 
 jsonread(FileName, JSON) :- 
-    open(FileName, read, Stream),
-    read_string(Stream, _, Stringa),
+    catch(open(FileName, read, Stream), _, false),
+    catch(read_string(Stream, _, Stringa), _, false),
     jsonparse(Stringa, JSON),
     close(Stream).
-
 
 %%% JSONDUMP
 
 jsondump(JSONObj, FileName):-
-    stringify(JSONObj, JSONString),
-    open(FileName, write, Stream,[create([all])]),
+    catch(stringify(JSONObj, JSONString), _, false),
+    open(FileName, write, Stream, [create([all])]),
     write(Stream, JSONString),
     close(Stream).
-
 
 stringify(jsonobj([]), {}) :- !. 
 stringify(jsonarray([]), []) :- !. 
@@ -166,10 +149,8 @@ stringify(jsonarray(Array), JSONString) :-
     string_concat("[", ArrayString, Concat1),
     string_concat(Concat1, "]", JSONString),
     !.
-stringify(String, JSONString) :-
+stringify(String, String) :-
     string(String),
-    string_concat("\"", String, String1),
-    string_concat(String1, "\"", JSONString),
     !.
 stringify(Number, Number) :-
     number(Number), !.
@@ -201,6 +182,5 @@ array_elements_strings([Value | Values], JSONString) :-
     string_concat(Concat1, ValuesString, JSONString),
     !.
 
-
-%%% Query per visualizzare sempre l'output complet
-:- set_prolog_flag(answer_write_options,[max_depth(0)]).
+%%% Query per visualizzare sempre l'output completo
+:- set_prolog_flag(answer_write_options, [max_depth(0)]).
